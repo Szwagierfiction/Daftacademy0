@@ -10,3 +10,7 @@ def hello_world():
 @app.get('/hello/{name}')
 def hello_name(name: str):
 	return f"Hello {name}"
+
+@app.get('/szwagier/{name}')
+def szwagier_name(name: str):
+	return f"Szwagier {name}"
