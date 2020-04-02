@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 app = FastAPI()
 
@@ -18,9 +18,5 @@ def read_method(request: Request):
     return {'method': request.method}
 
 @app.put('/method')
-def read_method(request: Request):
-    return {'method': request.method}
-
-@app.delete('/method')
 def read_method(request: Request):
     return {'method': request.method}
