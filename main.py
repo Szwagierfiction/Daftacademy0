@@ -10,11 +10,11 @@ def hello_world():
 # Wykład 1 - Zadanie 2
 @app.get('/method')
 def read_method(request: Request):
-    return {'method': request.method, 'elo': request.method}
+    return {'method': request.method}
 
 @app.post('/method')
 def read_method(request: Request):
-    return {'method': request.method, 'elo_post': request.method}
+    return {'method': request.method}
 
 @app.put('/method')
 def read_method(request: Request):
