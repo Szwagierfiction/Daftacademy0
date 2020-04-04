@@ -48,9 +48,9 @@ class PatientsPopulation(object):
 # (contribution of BaseModel)
 def patient(request: Patient):
     PatientsPopulation.have_new_patient()
-    return {"ID": PatientsPopulation.no_of_patients(),
+    return {"id": PatientsPopulation.no_of_patients(),
             "name": request.name,
-            "surname": request.surname}
+            "surename": request.surname}
 
 
 @app.post('/patient')
