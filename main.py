@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Request
+# from fastapi.testclient import TestClient
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -21,5 +23,36 @@ def read_method(request: Request):
     return {'method': request.method}
 
 @app.delete('/method')
+def read_method(request: Request):
+    return {'method': request.method}
+
+# Wykład 1 - Zadanie 3
+class Patient(BaseModel):
+    name: str
+    surname: str
+
+class PatientsPopulation(object):
+    count = 0
+
+    @staticmethod
+    def have_new_patient():
+        __class__.count += 1
+
+    @staticmethod
+    def no_of_patients():
+        return __class__.count
+
+
+@app.post("/patient")
+# request object is automagicaly casted by FastApi to 'Patient'
+# (contribution of BaseModel)
+def patient(request: Patient):
+    PatientsPopulation.have_new_patient()
+    return {"ID": PatientsPopulation.no_of_patients(),
+            "name": request.name,
+            "surname": request.surname}
+
+
+@app.post('/patient')
 def read_method(request: Request):
     return {'method': request.method}
