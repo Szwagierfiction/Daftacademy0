@@ -29,7 +29,7 @@ def read_method(request: Request):
 # Wykład 1 - Zadanie 3
 class Patient(BaseModel):
     name: str
-    surname: str
+    surename: str
 
 class PatientsPopulation(object):
     count = 0
@@ -51,7 +51,7 @@ def patient(request: Patient):
     return {"id": PatientsPopulation.no_of_patients(),
             "patient": {
                         "name": request.name,
-                        "surename": request.surname
+                        "surename": request.surename
                         }
             }
 
