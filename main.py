@@ -49,8 +49,11 @@ class PatientsPopulation(object):
 def patient(request: Patient):
     PatientsPopulation.have_new_patient()
     return {"id": PatientsPopulation.no_of_patients(),
-            "name": request.name,
-            "surename": request.surname}
+            "patient": {
+                        "name": request.name,
+                        "surename": request.surname
+                        }
+            }
 
 
 @app.post('/patient')
