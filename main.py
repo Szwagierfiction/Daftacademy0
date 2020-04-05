@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
-# comment2
+# comment3
 # Wyklad 1 - Zadanie 1
 @app.get('/')
 def hello_world():
