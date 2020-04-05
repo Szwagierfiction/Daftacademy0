@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-# from fastapi.testclient import TestClient
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -47,18 +47,57 @@ class PatientsPopulation(object):
 # request object is automagicaly casted by FastApi to 'Patient'
 # (contribution of BaseModel)
 def patient(request: Patient):
-    PatientsPopulation.have_new_patient()
-    return {"id": PatientsPopulation.no_of_patients(),
+    Patients.have_new_patient(request)
+    return {"id": Patients.no_of_patients(),
             "patient": {
                         "name": request.name,
                         "surename": request.surename
                         }
             }
 
+
 # Wykład 1 - Zadanie 4
+class PatientWithId(object):
+    def __init__(self, patient, id):
+        self.patient = patient
+        self.id = id
+
+class Patients(object):
+    count = 0
+    collectionById = {}
+    collectionByName = {}
+
+    @staticmethod
+    def find_patient_by_id(id):
+        if id in __class__.collectionById.keys():
+            return __class__.collectionById[id]
+        else:
+            return None
+
+    @staticmethod
+    def find_patient_by_name(patient: Patient):
+        key = patient.name + ";" + patient.surename
+        if key in __class__.collectionByName.keys():
+            return __class__.collectionByName[key]
+        else:
+            return None
+
+    @staticmethod
+    def have_new_patient(patient: Patient):
+        if not __class__.find_patient_by_name(patient):
+            p = PatientWithId(patient, __class__.count)
+            __class__.collectionById[__class__.count] = p
+            __class__.collectionByName[patient.name + ";" + patient.surename] = p
+            __class__.count += 1
+
+
+    @staticmethod
+    def no_of_patients():
+        return __class__.count
+
 @app.get('/patient/{pk}')
 def read_patient(pk: int):
-
-    if pk not in [i.id for i in patients]:
-       return JSONResponse(status_code = 204, content = {})
-    return patients[pk].patient
+    p = Patients.find_patient_by_id(pk)
+    if not p:
+        return JSONResponse(status_code=204, content={})
+    return p
