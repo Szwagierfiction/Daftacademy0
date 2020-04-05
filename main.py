@@ -55,7 +55,10 @@ def patient(request: Patient):
                         }
             }
 
+# Wykład 1 - Zadanie 4
+@app.get('/patient/{pk}')
+def read_patient(pk: int):
 
-@app.post('/patient')
-def read_method(request: Request):
-    return {'method': request.method}
+    if pk not in [i.id for i in patients]:
+       return JSONResponse(status_code = 204, content = {})
+    return patients[pk].patient
