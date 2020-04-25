@@ -5,10 +5,11 @@ from pydantic import BaseModel
 app = FastAPI()
 # comment5
 # Wyklad 1 - Zadanie 1
+"""
 @app.get('/')
 def hello_world():
 	return {"message": "Hello World during the coronavirus pandemic!"}
-
+"""
 # Wykład 1 - Zadanie 2
 @app.get('/method')
 def read_method(request: Request):
@@ -101,3 +102,12 @@ def read_patient(pk: int):
     if not p:
         return JSONResponse(status_code=204, content={})
     return p
+
+# Wykład 3 - Zadanie 1
+@app.get('/')
+def hello_world():
+	return {"message": "Hello World during the coronavirus pandemic!"}
+
+@app.get('/welcome')
+def hello_world():
+	return {"message": "Welcome during the coronavirus pandemic!"}
