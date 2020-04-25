@@ -109,5 +109,14 @@ def hello_world():
 	return {"message": "Hello World during the coronavirus pandemic!"}
 
 @app.get('/welcome')
-def hello_world():
+def welcome_world():
 	return {"message": "Welcome during the coronavirus pandemic!"}
+
+# Wykład 3 - Zadanie 2
+# @app.post('/login')
+# def login():
+@app.get("/simple_path_tmpl/{sample_variable}")
+def simple_path_tmpl(sample_variable: str):
+    print(f"{sample_variable=}")
+    print(type(sample_variable))
+    return {"sample_variable": sample_variable}
