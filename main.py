@@ -8,8 +8,6 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import RedirectResponse
 from hashlib import sha256
 
-import uvicorn
-
 app = FastAPI()
 # comment5
 # Wyklad 1 - Zadanie 1
@@ -177,3 +175,16 @@ def read_current_user(response: Response, userdata=Depends(get_current_username)
     session_token = session_token_func(userdata['username'], userdata['password'], app.secret_key)
     response.set_cookie(key="session_token", value=session_token)
     return RedirectResponse(url='/welcome', status_code=status.HTTP_302_FOUND)
+
+@app.post("/logout")
+def logout(response: Response, session_token: str = Cookie(None)):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    app.sessions.pop()
+    response.set_cookie(key="session_token", value="")
+    return RedirectResponse(url='/')
+
+import uvicorn
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
