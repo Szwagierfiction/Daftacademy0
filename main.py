@@ -146,7 +146,7 @@ app.secret_key = "jfdjksf"
 correct_session_token = session_token_func(correctusername, correctpassword, app.secret_key)
 app.sessions = []
 
-
+@app.post('/welcome')
 @app.get('/welcome')
 def welcome_world(response: Response, session_token: str = Cookie(None)):
     if correct_session_token not in app.sessions:
@@ -172,7 +172,7 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     return {"username": credentials.username, "password": credentials.password}
 
 
-@app.get("/login")
+@app.post("/login")
 def read_current_user(response: Response, userdata=Depends(get_current_username)):
     session_token = session_token_func(userdata['username'], userdata['password'], app.secret_key)
     response.set_cookie(key="session_token", value=session_token)
