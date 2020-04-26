@@ -1,6 +1,14 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+import secrets
+
+from fastapi import Depends, HTTPException, status, Response, Cookie
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.responses import RedirectResponse
+from hashlib import sha256
+
+import uvicorn
 
 app = FastAPI()
 # comment5
@@ -10,27 +18,34 @@ app = FastAPI()
 def hello_world():
 	return {"message": "Hello World during the coronavirus pandemic!"}
 """
+
+
 # Wykład 1 - Zadanie 2
 @app.get('/method')
 def read_method(request: Request):
     return {'method': request.method}
 
+
 @app.post('/method')
 def read_method(request: Request):
     return {'method': request.method}
+
 
 @app.put('/method')
 def read_method(request: Request):
     return {'method': request.method}
 
+
 @app.delete('/method')
 def read_method(request: Request):
     return {'method': request.method}
+
 
 # Wykład 1 - Zadanie 3
 class Patient(BaseModel):
     name: str
     surename: str
+
 
 class PatientsPopulation(object):
     count = 0
@@ -51,9 +66,9 @@ def patient(request: Patient):
     Patients.have_new_patient(request)
     return {"id": Patients.no_of_patients(),
             "patient": {
-                        "name": request.name,
-                        "surename": request.surename
-                        }
+                "name": request.name,
+                "surename": request.surename
+            }
             }
 
 
@@ -62,6 +77,7 @@ class PatientWithId(object):
     def __init__(self, patient, id):
         self.patient = patient
         self.id = id
+
 
 class Patients(object):
     count = 0
@@ -91,10 +107,10 @@ class Patients(object):
             __class__.collectionByName[patient.name + ";" + patient.surename] = p
             __class__.count += 1
 
-
     @staticmethod
     def no_of_patients():
         return __class__.count
+
 
 @app.get('/patient/{pk}')
 def read_patient(pk: int):
@@ -103,20 +119,61 @@ def read_patient(pk: int):
         return JSONResponse(status_code=204, content={})
     return p
 
+
 # Wykład 3 - Zadanie 1
 @app.get('/')
 def hello_world():
-	return {"message": "Hello World during the coronavirus pandemic!"}
+    return {"message": "Hello World during the coronavirus pandemic!"}
+
 
 @app.get('/welcome')
 def welcome_world():
-	return {"message": "Welcome during the coronavirus pandemic!"}
+    return {"message": "Welcome during the coronavirus pandemic!"}
+
 
 # Wykład 3 - Zadanie 2
-# @app.post('/login')
-# def login():
-@app.get("/simple_path_tmpl/{sample_variable}")
-def simple_path_tmpl(sample_variable: str):
-    print(f"{sample_variable=}")
-    print(type(sample_variable))
-    return {"sample_variable": sample_variable}
+security = HTTPBasic()
+
+
+def session_token_func(username, password, secret_key):
+    return sha256(bytes(f"{username}{password}{secret_key}", "utf-8")).hexdigest()
+
+
+correctusername = 'trudnY'
+correctpassword = 'PaC13Nt'
+app.secret_key = "jfdjksf"
+
+correct_session_token = session_token_func(correctusername, correctpassword, app.secret_key)
+app.sessions = []
+
+
+@app.get('/welcome')
+def welcome_world(response: Response, session_token: str = Cookie(None)):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    response.set_cookie(key="session_token", value=session_token)
+    return {"message": "Welcome during the coronavirus pandemic!"}
+
+
+def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
+    is_correct_username = secrets.compare_digest(credentials.username, correctusername)
+    is_correct_password = secrets.compare_digest(credentials.password, correctpassword)
+    if not (is_correct_username and is_correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    session_token = session_token_func(credentials.username, credentials.password, app.secret_key)
+
+    if session_token not in app.sessions:
+        app.sessions.append(session_token)
+
+    return {"username": credentials.username, "password": credentials.password}
+
+
+@app.get("/login")
+def read_current_user(response: Response, userdata=Depends(get_current_username)):
+    session_token = session_token_func(userdata['username'], userdata['password'], app.secret_key)
+    response.set_cookie(key="session_token", value=session_token)
+    return RedirectResponse(url='/welcome', status_code=status.HTTP_302_FOUND)
