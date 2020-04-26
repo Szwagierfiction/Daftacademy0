@@ -150,7 +150,7 @@ app.sessions = []
 @app.get('/welcome')
 def welcome_world(response: Response, session_token: str = Cookie(None)):
     if correct_session_token not in app.sessions:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     response.set_cookie(key="session_token", value=session_token)
     return {"message": "Welcome during the coronavirus pandemic!"}
 
@@ -160,7 +160,7 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     is_correct_password = secrets.compare_digest(credentials.password, correctpassword)
     if not (is_correct_username and is_correct_password):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
