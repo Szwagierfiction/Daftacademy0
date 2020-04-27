@@ -62,6 +62,8 @@ class PatientsPopulation(object):
 # request object is automagicaly casted by FastApi to 'Patient'
 # (contribution of BaseModel)
 def patient(request: Patient):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     Patients.have_new_patient(request)
     return {"id": Patients.no_of_patients(),
             "patient": {
@@ -113,6 +115,8 @@ class Patients(object):
 
 @app.get('/patient/{pk}')
 def read_patient(pk: int):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     p = Patients.find_patient_by_id(pk)
     if not p:
         return JSONResponse(status_code=204, content={})
