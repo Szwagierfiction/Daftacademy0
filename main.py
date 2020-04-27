@@ -22,6 +22,8 @@ def hello_world():
 # Wykład 1 - Zadanie 2
 @app.get('/method')
 def read_method(request: Request):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return {'method': request.method}
 
 
@@ -126,6 +128,8 @@ def read_patient(pk: int):
 # Wykład 3 - Zadanie 1
 @app.get('/')
 def hello_world():
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     return {"message": "Hello World during the coronavirus pandemic!"}
 
 
