@@ -10,6 +10,19 @@ from hashlib import sha256
 from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
+security = HTTPBasic()
+
+correctusername = 'trudnY'
+correctpassword = 'PaC13Nt'
+app.secret_key = "jfdjksf"
+
+def session_token_func(username, password, secret_key):
+    return sha256(bytes(f"{username}{password}{secret_key}", "utf-8")).hexdigest()
+
+correct_session_token = session_token_func(correctusername, correctpassword, app.secret_key)
+app.sessions = []
+
+templates = Jinja2Templates(directory="./")
 # comment5
 # Wyklad 1 - Zadanie 1
 """
@@ -144,22 +157,6 @@ def hello_world():
 
 
 # Wykład 3 - Zadanie 2
-security = HTTPBasic()
-
-
-def session_token_func(username, password, secret_key):
-    return sha256(bytes(f"{username}{password}{secret_key}", "utf-8")).hexdigest()
-
-
-correctusername = 'trudnY'
-correctpassword = 'PaC13Nt'
-app.secret_key = "jfdjksf"
-
-correct_session_token = session_token_func(correctusername, correctpassword, app.secret_key)
-app.sessions = []
-
-templates = Jinja2Templates(directory="./")
-
 @app.get('/welcome')
 def welcome_world(response: Response, request: Request, session_token: str = Cookie(None)):
     if correct_session_token not in app.sessions:
