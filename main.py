@@ -69,29 +69,66 @@ class Patient(BaseModel):
 
 class PatientsPopulation(object):
     count = 0
+    base = []
 
     @staticmethod
-    def have_new_patient():
+    def have_new_patient(name, surname):
         __class__.count += 1
+        __class__.base.append({"name": name, "surname": surname})
+        return __class__.count
 
     @staticmethod
     def no_of_patients():
         return __class__.count
 
+    def JSONall():
+        dict_of_patients = {}
+        idx = 0
+        for patient in __class__.base:
+            idx += 1
+            dict_of_patients["%s" % idx] = patient
+        return dict_of_patients
+
+    @staticmethod
+    def find_ith_patient(id):
+        return __class__.base[id-1]
+
+    @staticmethod
+    def delete_ith_patient(id):
+        del __class__.base[id-1 : id]
 
 @app.post("/patient")
-# request object is automagicaly casted by FastApi to 'Patient'
-# (contribution of BaseModel)
 def patient(request: Patient):
     if correct_session_token not in app.sessions:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-    Patients.have_new_patient(request)
-    return {"id": Patients.no_of_patients(),
-            "patient": {
-                "name": request.name,
-                "surename": request.surename
-            }
-            }
+    idx = Patients.have_new_patient(request)
+    return RedirectResponse(url='/patient/' + str(idx), status_code=status.HTTP_302_FOUND)
+
+@app.get("/patient")
+def patient(request: Patient):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    return PatientsPopulation.JSONall()
+
+@app.get("/patient/{pk}")
+# request object is automagicaly casted by FastApi to 'Patient'
+# (contribution of BaseModel)
+def patient(request: Patient, pk: int):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    if pk >= PatientsPopulation.no_of_patients():
+        return JSONResponse(status_code=204, content={})
+    return PatientsPopulation.find_ith_patient(pk)
+
+@app.delete("/patient/{pk}")
+# request object is automagicaly casted by FastApi to 'Patient'
+# (contribution of BaseModel)
+def patient(request: Patient, pk: int):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    if pk >= PatientsPopulation.no_of_patients():
+        return JSONResponse(status_code=204, content={})
+    PatientsPopulation.delete_ith_patient(pk)
 
 
 # Wykład 1 - Zadanie 4
@@ -133,7 +170,7 @@ class Patients(object):
     def no_of_patients():
         return __class__.count
 
-
+"""
 @app.get('/patient/{pk}')
 def read_patient(pk: int):
     if correct_session_token not in app.sessions:
@@ -143,6 +180,15 @@ def read_patient(pk: int):
         return JSONResponse(status_code=204, content={})
     return p
 
+@app.delete('/patient/{pk}')
+def read_patient(pk: int):
+    if correct_session_token not in app.sessions:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    p = Patients.find_patient_by_id(pk)
+    if not p:
+        return JSONResponse(status_code=204, content={})
+    return p
+"""
 
 # Wykład 3 - Zadanie 1
 @app.get('/')
