@@ -1,15 +1,8 @@
 from fastapi import FastAPI
 import aiosqlite
 import sqlite3
-from fastapi.responses import JSONResponse
-import secrets
-
-from fastapi import Depends, HTTPException, status, Response, Cookie
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.responses import RedirectResponse
 
 app = FastAPI()
-
 
 @app.on_event("startup")
 async def startup():
@@ -22,7 +15,8 @@ async def read_track(page: int = 0, per_page: int = 10):
     data = await cursor.fetchmany(per_page)
     return data
 
-
+"""
 import uvicorn
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+"""
