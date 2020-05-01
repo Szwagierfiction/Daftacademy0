@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, status, Request
 from pydantic import BaseModel
 import aiosqlite
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 
@@ -77,6 +78,61 @@ async def get_album(request: Request, album_id: int):
             "Title": album[1],
             "ArtistId": album[2]
             }
+# zad4
+class Customer(BaseModel):
+        company: str = None
+        address: str = None
+        city: str = None
+        state: str = None
+        country: str = None
+        postalcode: str = None
+        fax: str = None
+
+        def __getitem__(self, key):
+            return getattr(self, key)
+
+        @staticmethod
+        def translate(nazwa):
+            if nazwa == "company":
+                nazwa = "Company"
+            if nazwa == "address":
+                nazwa = "Address"
+            if nazwa == "city":
+                nazwa = "City"
+            if nazwa == "state":
+                nazwa = "State"
+            if nazwa == "postalcode":
+                nazwa = "PostalCode"
+            if nazwa == "fax":
+                nazwa = "Fax"
+            return nazwa
+
+
+@app.put('/customers/{customer_id}')
+async def put_customers(request: Customer, customer_id: int):
+
+    cursor = await app.db_connection.execute(f'''
+    SELECT COUNT(*) FROM customers WHERE customers.CustomerId = {customer_id}''')
+    existance = await cursor.fetchone()
+    if (existance[0] == 0):
+        raise HTTPException(detail={"error": f"Klient o numerze {customer_id} nie istnieje"},
+                            status_code=status.HTTP_404_NOT_FOUND)
+    request = jsonable_encoder(request)
+
+    #update
+    sqlUpdate = []
+
+    for idx in request:
+        if request[idx] != None:
+            sqlUpdate.append(f'''{Customer.translate(idx)} = "{request[idx]}"''')
+    sql_text = "UPDATE customers SET " + ", ".join(sqlUpdate) + "WHERE customers.CustomerId = " + str(customer_id) + ";"
+    cursor = await app.db_connection.execute(sql_text)
+    await app.db_connection.commit()
+
+    cursor = await app.db_connection.execute(f'''
+    SELECT * FROM customers WHERE customers.CustomerId = {customer_id}''')
+    data = await cursor.fetchone()
+    return data
 
 
 import uvicorn
