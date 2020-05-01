@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
+from pydantic import BaseModel
 import aiosqlite
 
 app = FastAPI()
@@ -28,7 +29,7 @@ def no_more_list(data):
     return data2
 
 @app.get('/tracks/composers')
-async def read_track(composer_name: str):
+async def composer(composer_name: str):
     cursor = await app.db_connection.execute(f'''
     SELECT Name FROM Tracks WHERE Tracks.Composer = "{composer_name}" ORDER BY Tracks.name''')
     #data = map(lambda x: x[0], await cursor.fetchall())
@@ -38,7 +39,34 @@ async def read_track(composer_name: str):
     data = no_more_list(data)
     return data
 
-"""import uvicorn
+class Album(BaseModel):
+    title: str
+    artist_id: int
+
+@app.post('/albums', status_code=201)
+async def albums(request: Album):
+    cursor = await app.db_connection.execute(f'''
+    SELECT COUNT(*) FROM artists WHERE artists.ArtistId = {request.artist_id}''')
+    existance = await cursor.fetchone()
+    if (existance[0] == 0):
+        raise HTTPException(detail={"error": f"Artysta o numerze {request.artist_id} nie istnieje"}, status_code=status.HTTP_404_NOT_FOUND)
+
+    cursor = await app.db_connection.execute(f'''
+    INSERT INTO albums (Title, ArtistId) VALUES("{request.title}", {request.artist_id});''')
+    await app.db_connection.commit()
+
+    cursor = await app.db_connection.execute(f'''
+    SELECT AlbumId FROM albums WHERE Albums.Title = "{request.title}" ORDER BY AlbumId DESC LIMIT 1;''')
+    albums = await cursor.fetchone()
+    AlbumId = albums[0]
+
+    app.db_connection.row_factory = aiosqlite.Row
+    return {
+            "AlbumId": AlbumId,
+            "Title": request.title,
+            "ArtistId": request.artist_id
+            }
+
+import uvicorn
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
-"""
