@@ -59,13 +59,25 @@ async def albums(request: Album):
     SELECT AlbumId FROM albums WHERE Albums.Title = "{request.title}" ORDER BY AlbumId DESC LIMIT 1;''')
     albums = await cursor.fetchone()
     AlbumId = albums[0]
-
-    app.db_connection.row_factory = aiosqlite.Row
     return {
             "AlbumId": AlbumId,
             "Title": request.title,
             "ArtistId": request.artist_id
             }
+
+@app.get('/albums/{album_id}')
+async def get_album(request: Request, album_id: int):
+
+    cursor = await app.db_connection.execute(f'''
+    SELECT AlbumId, Title, ArtistId FROM albums WHERE albums.AlbumId = {album_id}''')
+    album = await cursor.fetchone()
+
+    return {
+            "AlbumId": album[0],
+            "Title": album[1],
+            "ArtistId": album[2]
+            }
+
 
 import uvicorn
 if __name__ == "__main__":
