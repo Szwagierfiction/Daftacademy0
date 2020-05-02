@@ -110,16 +110,16 @@ class Customer(BaseModel):
 
 @app.put('/customers/{customer_id}')
 async def put_customers(request: Customer, customer_id: int):
-
+    # 404
     cursor = await app.db_connection.execute(f'''
     SELECT COUNT(*) FROM customers WHERE customers.CustomerId = {customer_id}''')
     existance = await cursor.fetchone()
     if (existance[0] == 0):
         raise HTTPException(detail={"error": f"Klient o numerze {customer_id} nie istnieje"},
                             status_code=status.HTTP_404_NOT_FOUND)
-    request = jsonable_encoder(request)
 
-    #update
+    # update
+    request = jsonable_encoder(request)
     sqlUpdate = []
 
     for idx in request:
@@ -131,7 +131,11 @@ async def put_customers(request: Customer, customer_id: int):
 
     cursor = await app.db_connection.execute(f'''
     SELECT * FROM customers WHERE customers.CustomerId = {customer_id}''')
-    data = await cursor.fetchone()
+    values = await cursor.fetchone()
+    cursor = await app.db_connection.execute(f'''
+    SELECT * FROM customers''')
+    names = [description[0] for description in cursor.description]
+    data = dict(zip(names, values))
     return data
 
 
