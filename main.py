@@ -144,35 +144,65 @@ def takeSecond(elem):
     return elem[1]
 
 @app.get('/sales')
-async def sales(category: str = "customers"): #na razie default 'customers'
-    if category not in ["customers"]:
+async def sales(category: str):
+
+    if category not in ['customers', 'genres']:
         raise HTTPException(detail={"error": f'''Kategoria '{category}' nie istnieje'''},
                             status_code=status.HTTP_404_NOT_FOUND)
-    valuesList = []
-    valuesList.append((0,0))
-    for i in range(59):
-        cursor = await app.db_connection.execute(f'''
-        SELECT SUM(CASE WHEN invoices.CustomerId = {i+1} THEN invoices.total ELSE 0 END) FROM invoices''')
-        totalSum = await cursor.fetchone()
-        totalSum = round(totalSum[0], 2)
-        customerIdWithValue = (i+1, totalSum)
-        valuesList.append(customerIdWithValue)
-    valuesList.sort(key=takeSecond, reverse=True)
-    valuesList.pop()
 
-    # dict
-    data = []
-    for customerId, totalSum in valuesList:
-        cursor = await app.db_connection.execute(f'''
-                SELECT Email, Phone FROM customers WHERE customers.CustomerId = {customerId}''')
-        customerData = await cursor.fetchone()
+    if category == 'customers':
+        valuesList = []
+        valuesList.append((0,0))
+        for i in range(59):
+            cursor = await app.db_connection.execute(f'''
+            SELECT SUM(CASE WHEN invoices.CustomerId = {i+1} THEN invoices.total ELSE 0 END) FROM invoices''')
+            totalSum = await cursor.fetchone()
+            totalSum = round(totalSum[0], 2)
+            customerIdWithValue = (i+1, totalSum)
+            valuesList.append(customerIdWithValue)
+        valuesList.sort(key=takeSecond, reverse=True)
+        valuesList.pop()
 
-        data.append({
-                    "CustomerId": customerId,
-                    "Email": customerData[0],
-                    "Phone": customerData[1],
-                    "Sum": totalSum
-                    })
+        # dict
+        data = []
+        for customerId, totalSum in valuesList:
+            cursor = await app.db_connection.execute(f'''
+                    SELECT Email, Phone FROM customers WHERE customers.CustomerId = {customerId}''')
+            customerData = await cursor.fetchone()
+
+            data.append({
+                        "CustomerId": customerId,
+                        "Email": customerData[0],
+                        "Phone": customerData[1],
+                        "Sum": totalSum
+                        })
+
+    if category == 'genres':
+        valuesList = []
+        valuesList.append((0,0))
+        for i in range(24):
+            cursor = await app.db_connection.execute(f'''
+            SELECT COUNT(GenreId) FROM invoice_items JOIN tracks ON tracks.TrackId = invoice_items.TrackId 
+            WHERE GenreId = {i+1}''')
+            totalSum = await cursor.fetchone()
+            totalSum = totalSum[0]
+            genreIdWithValue = (i+1, totalSum)
+            valuesList.append(genreIdWithValue)
+
+        valuesList.sort(key=takeSecond, reverse=True)
+        valuesList.pop()
+
+        # dict
+        data = []
+        for genreId, totalSum in valuesList:
+            cursor = await app.db_connection.execute(f'''
+                            SELECT Name FROM genres WHERE genres.GenreId = {genreId}''')
+            genreData = await cursor.fetchone()
+
+            data.append({
+                "Name": genreData[0],
+                "Sum": totalSum
+            })
 
     return data
 
