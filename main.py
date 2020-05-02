@@ -50,7 +50,8 @@ async def albums(request: Album):
     SELECT COUNT(*) FROM artists WHERE artists.ArtistId = {request.artist_id}''')
     existance = await cursor.fetchone()
     if (existance[0] == 0):
-        raise HTTPException(detail={"error": f"Artysta o numerze {request.artist_id} nie istnieje"}, status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(detail={"error": f"Artysta o numerze {request.artist_id} nie istnieje"},
+                            status_code=status.HTTP_404_NOT_FOUND)
 
     cursor = await app.db_connection.execute(f'''
     INSERT INTO albums (Title, ArtistId) VALUES("{request.title}", {request.artist_id});''')
@@ -129,6 +130,7 @@ async def put_customers(request: Customer, customer_id: int):
     cursor = await app.db_connection.execute(sql_text)
     await app.db_connection.commit()
 
+    # dict
     cursor = await app.db_connection.execute(f'''
     SELECT * FROM customers WHERE customers.CustomerId = {customer_id}''')
     values = await cursor.fetchone()
@@ -136,6 +138,42 @@ async def put_customers(request: Customer, customer_id: int):
     SELECT * FROM customers''')
     names = [description[0] for description in cursor.description]
     data = dict(zip(names, values))
+    return data
+
+def takeSecond(elem):
+    return elem[1]
+
+@app.get('/sales')
+async def sales(category: str = "customers"): #na razie default 'customers'
+    if category not in ["customers"]:
+        raise HTTPException(detail={"error": f'''Kategoria '{category}' nie istnieje'''},
+                            status_code=status.HTTP_404_NOT_FOUND)
+    valuesList = []
+    valuesList.append((0,0))
+    for i in range(59):
+        cursor = await app.db_connection.execute(f'''
+        SELECT SUM(CASE WHEN invoices.CustomerId = {i+1} THEN invoices.total ELSE 0 END) FROM invoices''')
+        totalSum = await cursor.fetchone()
+        totalSum = round(totalSum[0], 2)
+        customerIdWithValue = (i+1, totalSum)
+        valuesList.append(customerIdWithValue)
+    valuesList.sort(key=takeSecond, reverse=True)
+    valuesList.pop()
+
+    # dict
+    data = []
+    for customerId, totalSum in valuesList:
+        cursor = await app.db_connection.execute(f'''
+                SELECT Email, Phone FROM customers WHERE customers.CustomerId = {customerId}''')
+        customerData = await cursor.fetchone()
+
+        data.append({
+                    "CustomerId": customerId,
+                    "Email": customerData[0],
+                    "Phone": customerData[1],
+                    "Sum": totalSum
+                    })
+
     return data
 
 
