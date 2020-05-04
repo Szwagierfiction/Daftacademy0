@@ -16,13 +16,18 @@ async def shutdown():
 @app.get('/tracks')
 async def read_track(page: int = 0, per_page: int = 10):
     app.db_connection.row_factory = aiosqlite.Row
+    data = app.db_connection.execute("SELECT * FROM tracks ORDER BY TrackId").fetchall()
+    current_tracks = data[per_page * page:per_page * (page + 1)]
+    return current_tracks
+
+    """
     cursor = await app.db_connection.execute(f'''
     SELECT tracks.TrackId as TrackId, tracks.name as Name, tracks.albumid as AlbumId, tracks.MediaTypeId as MediaTypeId,
     tracks.GenreId as GenreId, tracks.Composer as Composer, tracks.Milliseconds as Milliseconds, tracks.Bytes as Bytes, 
     tracks.UnitPrice as UnitPrice FROM tracks WHERE TrackId >= {page*per_page}''')
     data = await cursor.fetchmany(per_page)
     return data
-
+    """
 def no_more_list(data):
     data2 = []
     for i in data:
