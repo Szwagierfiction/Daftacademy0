@@ -2,12 +2,13 @@ from fastapi import FastAPI, HTTPException, status, Request
 from pydantic import BaseModel
 import aiosqlite
 from fastapi.encoders import jsonable_encoder
+import sqlite3
 
 app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
-    app.db_connection = await aiosqlite.connect('chinook.db')
+    app.db_connection = sqlite3.connect('chinook.db')
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -16,7 +17,8 @@ async def shutdown():
 @app.get('/tracks')
 async def read_track(page: int = 0, per_page: int = 10):
     app.db_connection.row_factory = aiosqlite.Row
-    data = app.db_connection.execute("SELECT * FROM tracks ORDER BY TrackId").fetchall()
+    cursor = app.db_connection.execute("SELECT * FROM tracks ORDER BY TrackId")
+    data = cursor.fetchall()
     current_tracks = data[per_page * page:per_page * (page + 1)]
     return current_tracks
 
