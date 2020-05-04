@@ -25,12 +25,19 @@ async def read_track(page: int = 0, per_page: int = 10):
     return current_tracks
     """
 
-    cursor = app.db_connection.execute(f'''
+    app.db_connection.row_factory = aiosqlite.Row
+    data = app.db_connection.execute(f'''
+    SELECT * FROM tracks WHERE TrackId >= {page*per_page}''').fetchmany(per_page)
+    return data
+
+    """
+    cursor = await app.db_connection.execute(f'''
     SELECT tracks.TrackId as TrackId, tracks.name as Name, tracks.albumid as AlbumId, tracks.MediaTypeId as MediaTypeId,
     tracks.GenreId as GenreId, tracks.Composer as Composer, tracks.Milliseconds as Milliseconds, tracks.Bytes as Bytes, 
     tracks.UnitPrice as UnitPrice FROM tracks WHERE TrackId >= {page*per_page}''')
-    data = cursor.fetchmany(per_page)
+    data = await cursor.fetchmany(per_page)
     return data
+    """
 
 def no_more_list(data):
     data2 = []
@@ -42,7 +49,6 @@ def no_more_list(data):
 async def composer(composer_name: str):
     cursor = await app.db_connection.execute(f'''
     SELECT Name FROM Tracks WHERE Tracks.Composer = "{composer_name}" ORDER BY Tracks.name''')
-    #data = map(lambda x: x[0], await cursor.fetchall())
     data = await cursor.fetchall()
     if (len(data) == 0):
         raise HTTPException(detail={"error": f"{composer_name} nie istnieje"}, status_code=status.HTTP_404_NOT_FOUND)
@@ -158,17 +164,16 @@ async def sales(category: str):
     if category not in ['customers', 'genres']:
         raise HTTPException(detail={"error": f'''Kategoria '{category}' nie istnieje'''},
                             status_code=status.HTTP_404_NOT_FOUND)
-
+    valuesList = [(0, 0)]
     if category == 'customers':
-        valuesList = []
-        valuesList.append((0,0))
-        for i in range(59):
-            cursor = await app.db_connection.execute(f'''
-            SELECT SUM(CASE WHEN invoices.CustomerId = {i+1} THEN invoices.total ELSE 0 END) FROM invoices''')
+        limit = 59
+        sql_text_0 = f'''SELECT SUM(CASE WHEN invoices.CustomerId = '''
+        sql_text_1 = f''' THEN invoices.total ELSE 0 END) FROM invoices'''
+
+        for i in range(limit):
+            cursor = await app.db_connection.execute(sql_text_0 + str(i+1) + sql_text_1)
             totalSum = await cursor.fetchone()
-            totalSum = round(totalSum[0], 2)
-            customerIdWithValue = (i+1, totalSum)
-            valuesList.append(customerIdWithValue)
+            valuesList.append((i+1, round(totalSum[0], 2)))
         valuesList.sort(key=takeSecond, reverse=True)
         valuesList.pop()
 
@@ -187,16 +192,34 @@ async def sales(category: str):
                         })
 
     if category == 'genres':
-        valuesList = []
-        valuesList.append((0,0))
+        for i in range(24):
+            totalSum = app.db_connection.execute(f'''
+            SELECT COUNT(GenreId) FROM invoice_items JOIN tracks ON tracks.TrackId = invoice_items.TrackId 
+            WHERE GenreId = {i+1}''').fetchone()
+            valuesList.append((i+1, totalSum[0]))
+
+        valuesList.sort(key=takeSecond, reverse=True)
+        valuesList.pop()
+
+        # dict
+        data = []
+        for genreId, totalSum in valuesList:
+            genreData = app.db_connection.execute(f'''
+                            SELECT Name FROM genres WHERE genres.GenreId = {genreId}''').fetchone()
+
+            data.append({
+                "Name": genreData[0],
+                "Sum": totalSum
+            })
+
+    """
+    if category == 'genres':
         for i in range(24):
             cursor = await app.db_connection.execute(f'''
             SELECT COUNT(GenreId) FROM invoice_items JOIN tracks ON tracks.TrackId = invoice_items.TrackId 
             WHERE GenreId = {i+1}''')
             totalSum = await cursor.fetchone()
-            totalSum = totalSum[0]
-            genreIdWithValue = (i+1, totalSum)
-            valuesList.append(genreIdWithValue)
+            valuesList.append((i+1, totalSum[0]))
 
         valuesList.sort(key=takeSecond, reverse=True)
         valuesList.pop()
@@ -212,7 +235,7 @@ async def sales(category: str):
                 "Name": genreData[0],
                 "Sum": totalSum
             })
-
+            """
     return data
 
 
